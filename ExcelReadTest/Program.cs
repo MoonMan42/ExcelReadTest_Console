@@ -1,60 +1,60 @@
 ﻿
-using GemBox.Spreadsheet;
+using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Text;
+using System.IO;
 
-
- 
 namespace ExcelReadTest
 {
     class Program
     {
+        static List<Model> testModel = new List<Model>();
+
         static void Main(string[] args)
         {
-            SpreadsheetInfo.SetLicense("FREE-LIMITED-KEY");
 
-            var workbook = ExcelFile.Load(@"Test.xlsx");
+            FileInfo file = new FileInfo("test.xlsx");
 
-            var worksheet = workbook.Worksheets[0];
+            ExcelPackage.LicenseContext = LicenseContext.Commercial; // set the lineces
 
-            List<Model> testModel = new List<Model>();
-
-            //create Datatable 
-            var dataTable = worksheet.CreateDataTable(new CreateDataTableOptions()
+            using (ExcelPackage package = new ExcelPackage(file))
             {
-                ColumnHeaders = true,
-                StartRow = 0,
-                NumberOfColumns = 2,
-                NumberOfRows = worksheet.Rows.Count,
-                Resolution = ColumnTypeResolution.AutoPreferStringCurrentCulture
-            });
+                ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
 
-            // write datatable content
-            var sb = new StringBuilder();
-            sb.AppendLine("Content: ");
-            foreach (DataRow row in dataTable.Rows)
-            {
-                //sb.AppendFormat($"{row[0]}\t{row[1]}");
-                //sb.AppendLine();
+                int colCount = worksheet.Dimension.End.Column; // get column count
+                int rowCount = worksheet.Dimension.End.Row; // get row count
 
-                testModel.Add(new Model { FirstCol = row[0].ToString(), SecondCol = row[1].ToString() });
+                for (int r = 2; r <= rowCount; r++) // start at 2 to skip the header.
+                {
+                    List<string> col = new List<string>();
+                    for (int c = 1; c <= colCount; c++)
+                    {
+                        //Console.WriteLine($"Row:{r} Col:{c} Value: {worksheet.Cells[r, c].Value?.ToString()}");
+
+                        col.Add(worksheet.Cells[r, c].Value?.ToString());
+                    }
+
+                    testModel.Add(new Model
+                    {
+                        ColA = col[0],
+                        ColB = col[1]
+                    });
+                }
             }
 
-            //Console.WriteLine(sb.ToString());
-
-            foreach (var test in testModel)
+            foreach (var t in testModel)
             {
-                Console.WriteLine($"First = {test.FirstCol}\t Second = {test.SecondCol}");
+                Console.WriteLine($"{t.ColA}\t{t.ColB}");
             }
+
             Console.ReadKey();
         }
 
-        class Model
-        {
-            public string FirstCol { get; set; }
-            public string SecondCol { get; set; }
-        }
+    }
+
+    class Model
+    {
+        public string ColA { get; set; }
+        public string ColB { get; set; }
     }
 }
